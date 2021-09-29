@@ -1,5 +1,6 @@
 package io.github.JMoore34_CSweetman
 
+import io.github.JMoore34_CSweetman.SerializableClasses.Room
 import io.ktor.application.*
 import io.ktor.response.*
 import io.ktor.request.*
@@ -17,16 +18,9 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 val rooms = mutableMapOf<String, Room>()
 val globalMutex = Mutex()
 
-class Room(
-    val playerList: MutableList<Player>
-){
 
-}
-class Player(
-    val name: String,
-    val id: Int,
-    val rolesWon: MutableList<String>,
-)
+
+
 
 /*class Message(
     //Client to Server
