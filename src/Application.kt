@@ -10,8 +10,31 @@ import io.ktor.websocket.*
 import io.ktor.http.cio.websocket.*
 import java.time.*
 import io.ktor.gson.*
+import kotlinx.coroutines.sync.Mutex
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
+
+val rooms = mutableMapOf<String, Room>()
+val globalMutex = Mutex()
+
+class Room(
+    val playerList: MutableList<Player>
+){
+
+}
+class Player(
+    val name: String,
+    val id: Int,
+    val rolesWon: MutableList<String>,
+)
+
+/*class Message(
+    //Client to Server
+    val room: Room?
+    val playerID:
+)*/
+
+//val jackson = Jackson
 
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
