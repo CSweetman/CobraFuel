@@ -9,8 +9,8 @@ import io.ktor.http.*
 import io.ktor.websocket.*
 import io.ktor.http.cio.websocket.*
 import java.time.*
-import io.ktor.gson.*
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.serialization.json.*
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -48,11 +48,6 @@ fun Application.module(testing: Boolean = false) {
         timeout = Duration.ofSeconds(15)
         maxFrameSize = Long.MAX_VALUE
         masking = false
-    }
-
-    install(ContentNegotiation) {
-        gson {
-        }
     }
 
     routing {
