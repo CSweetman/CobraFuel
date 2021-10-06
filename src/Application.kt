@@ -1,9 +1,8 @@
 package io.github.JMoore34_CSweetman
 
-import io.github.JMoore34_CSweetman.SerializableClasses.Room
+import io.github.JMoore34_CSweetman.SerializableClasses.SerializableRoomInfo
 import io.ktor.application.*
 import io.ktor.response.*
-import io.ktor.request.*
 import io.ktor.features.*
 import io.ktor.routing.*
 import io.ktor.http.*
@@ -15,7 +14,7 @@ import kotlinx.coroutines.sync.Mutex
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
-val rooms = mutableMapOf<String, Room>()
+val rooms = mutableMapOf<String, SerializableRoomInfo>()
 val globalMutex = Mutex()
 
 
