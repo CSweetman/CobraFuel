@@ -3,17 +3,17 @@ import kotlinx.serialization.*
 
 @Serializable
 class Player(
-    val name: String,
+    val name: String = "Unnamed user",
     val id: Int,
-    val rolesWon: MutableList<String>,
-    val presentedHand: MutableList<String>
+    val rolesWon: MutableList<String> = mutableListOf(),
+    val presentedHand: MutableList<String> = mutableListOf()
 )
 
 @Serializable
 class SerializableRoomInfo(
-    val playerList: MutableList<Player>,
-    val judgePlayerID: Int,
-    val judgeRole: String
+    var playerList: MutableList<Player> = mutableListOf<Player>(),
+    val judgePlayerID: Int = 0,
+    val judgeRole: String = ""
 )
 
 @Serializable
