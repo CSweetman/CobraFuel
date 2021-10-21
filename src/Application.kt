@@ -14,7 +14,6 @@ import java.time.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.*
-import java.io.File
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -24,17 +23,22 @@ val globalMutex = Mutex()
 
 val a = englishWords.shuffled()
 
-class Room(val roomInfo: SerializableRoomInfo = SerializableRoomInfo(),
-           val englishWordIterator: Iterator<String> = englishWords.shuffled().iterator(),
-           var customWords: Iterator<String> = listOf<String>().iterator(),
-           var profaneWords: Iterator<String> = listOf<String>().iterator(),
-           val judgeRolesIterator: Iterator<String> = judgeRoles.shuffled().iterator(),
-           val mutex: Mutex = Mutex(),
+data class PlayerSession(val session: WebSocketSession, val playerID: Int)
+
+class Room(
+            val roomInfo: SerializableRoomInfo = SerializableRoomInfo(),
+            val englishWordIterator: Iterator<String> = englishWords.shuffled().iterator(),
+            var customWords: Iterator<String> = listOf<String>().iterator(),
+            var profaneWords: Iterator<String> = listOf<String>().iterator(),
+            val judgeRolesIterator: Iterator<String> = judgeRoles.shuffled().iterator(),
+            val mutex: Mutex = Mutex(),
+            val playerSessionToID:  MutableList<PlayerSession> = mutableListOf()
 )
 
 val json = Json { explicitNulls = false; prettyPrint = false }
 
 suspend fun WebSocketSession.sendMessage(message: Message) = this.send(json.encodeToString(Message.serializer(), message))
+
 
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
@@ -71,48 +75,59 @@ fun Application.module(testing: Boolean = false) {
 
             var room: Room
 
-            globalMutex.withLock{
-                if(!rooms.containsKey(roomCode))
+            globalMutex.withLock {
+                if (!rooms.containsKey(roomCode))
                     rooms[roomCode as String] = Room()
                 room = rooms[roomCode]!!
-
-                room.roomInfo.playerList += Player(id = room.roomInfo.playerList.size)
             }
 
             // Broadcasts a message to all users in the room
-//            suspend fun broadcast(msg: Message) {
-//                room.roomInfo.players.keys.map {
-//                    it.sendMessage(msg)
-//                }
-//            }
-//
-//            // Like above, but skips the client who prompted the server
-//            suspend fun broadcastSkipSender(msg: Message) {
-//                room.users.keys.filter { it != this}.map {
-//                    it.sendMessage(msg)
-//                }
-//            }
-
-            room.mutex.withLock {}
-
-
-                // Inform the new user of the existing roles and users
-//                sendMessage(Message(roles = room.roles.toList()))
-//                sendMessage(Message(users = room.users.values.toList()))
-
-                // Inform everyone else of the update to the user list because this new user joined
-
-
-            while (true) {
-                val frame = incoming.receive()
-                if (frame is Frame.Text) {
-                    send(Frame.Text("Client said: " + frame.readText()))
+            suspend fun broadcast(msg: Message) {
+                room.playerSessionToID.map {
+                    it.session.sendMessage(msg)
                 }
             }
-        }
 
-        get("/json/gson") {
-            call.respond(mapOf("hello" to "world"))
+            //
+//            // Like above, but skips the client who prompted the server
+            suspend fun broadcastSkipSender(msg: Message) {
+                room.playerSessionToID.filter { it.session != this }.map {
+                    it.session.sendMessage(msg)
+                }
+            }
+
+            room.mutex.withLock {
+                val newPlayerID = room.roomInfo.playerList.size
+                val newPlayer = Player(id = room.roomInfo.playerList.size, session = this)
+                room.roomInfo.playerList += newPlayer
+                room.playerSessionToID.add(PlayerSession(this, newPlayerID))
+                sendMessage(Message(currentState = Message.CurrentState(room.roomInfo, newPlayerID)))
+                broadcastSkipSender(Message(playerJoined = Message.PlayerJoined(newPlayer)))
+            }
+
+            try {
+                while (true) {
+                    val frame = incoming.receive()
+                    if (frame is Frame.Text) {
+                        room.mutex.withLock {
+                            val message = json.decodeFromString(Message.serializer(), frame.readText())
+                            if(message.cardsPlayed != null) {
+                                val id = room.playerSessionToID.first { it.session == this }.playerID
+                                room.roomInfo.playerList.first { it.id == id }.presentedHand = message.cardsPlayed.cards
+                                broadcastSkipSender(message)
+                            }
+                        }
+                        send(Frame.Text("Client said: " + frame.readText()))
+                    }
+                }
+            } catch (e: Throwable) {
+
+
+            }
+
+            get("/json/gson") {
+                call.respond(mapOf("hello" to "world"))
+            }
         }
     }
 }

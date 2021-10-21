@@ -1,12 +1,16 @@
 package io.github.JMoore34_CSweetman.SerializableClasses
+import io.ktor.http.cio.websocket.*
 import kotlinx.serialization.*
+import kotlin.jvm.Transient
 
 @Serializable
 class Player(
     val name: String = "Unnamed user",
     val id: Int,
     val rolesWon: MutableList<String> = mutableListOf(),
-    val presentedHand: MutableList<String> = mutableListOf()
+    var presentedHand: List<String> = listOf(),
+    @kotlinx.serialization.Transient
+    val session: WebSocketSession? = null
 )
 
 @Serializable
@@ -19,12 +23,12 @@ class SerializableRoomInfo(
 @Serializable
 class Message(
     // Exactly one of the following will be non-null.
-    val currentState: CurrentState?,
-    val playerJoined: PlayerJoined?,
-    val playerLeft: PlayerLeft?,
-    val endOfRound: EndOfRound?,
-    val selectionOfRole: SelectionOfRole?,
-    val cardsPlayed: CardsPlayed?
+    val currentState: CurrentState? = null,
+    val playerJoined: PlayerJoined? = null,
+    val playerLeft: PlayerLeft? = null,
+    val endOfRound: EndOfRound? = null,
+    val selectionOfRole: SelectionOfRole? = null,
+    val cardsPlayed: CardsPlayed? = null
 
 ) {
     // Informs a new player of the current room state & their assigned player ID.
@@ -57,6 +61,6 @@ class Message(
     // 1. Sent from player to server when they select the cards they want to present.
     // 2. Broadcast from server to all clients (server sets player ID).
     @Serializable
-    class CardsPlayed(val cardsPlayed: List<String>, val playerID: Int?)
+    class CardsPlayed(val cards: List<String>, val playerID: Int?)
 }
 
