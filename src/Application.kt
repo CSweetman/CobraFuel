@@ -26,18 +26,19 @@ val a = englishWords.shuffled()
 data class PlayerSession(val session: WebSocketSession, val playerID: Int)
 
 class Room(
-            val roomInfo: SerializableRoomInfo = SerializableRoomInfo(),
-            val englishWordIterator: Iterator<String> = englishWords.shuffled().iterator(),
-            var customWords: Iterator<String> = listOf<String>().iterator(),
-            var profaneWords: Iterator<String> = listOf<String>().iterator(),
-            val judgeRolesIterator: Iterator<String> = judgeRoles.shuffled().iterator(),
-            val mutex: Mutex = Mutex(),
-            val playerSessionToID:  MutableList<PlayerSession> = mutableListOf()
+    val roomInfo: SerializableRoomInfo = SerializableRoomInfo(),
+    val englishWordIterator: Iterator<String> = englishWords.shuffled().iterator(),
+    var customWords: Iterator<String> = listOf<String>().iterator(),
+    var profaneWords: Iterator<String> = listOf<String>().iterator(),
+    val judgeRolesIterator: Iterator<String> = judgeRoles.shuffled().iterator(),
+    val mutex: Mutex = Mutex(),
+    val playerSessionToID: MutableList<PlayerSession> = mutableListOf()
 )
 
 val json = Json { explicitNulls = false; prettyPrint = false }
 
-suspend fun WebSocketSession.sendMessage(message: Message) = this.send(json.encodeToString(Message.serializer(), message))
+suspend fun WebSocketSession.sendMessage(message: Message) =
+    this.send(json.encodeToString(Message.serializer(), message))
 
 
 @Suppress("unused") // Referenced in application.conf
@@ -97,32 +98,50 @@ fun Application.module(testing: Boolean = false) {
             }
 
             room.mutex.withLock {
-                val newPlayerID = room.roomInfo.playerList.size
-                val newPlayer = Player(id = room.roomInfo.playerList.size, session = this)
+                val newPlayerID = if (room.roomInfo.playerList.isEmpty()) 0 else room.roomInfo.playerList.last().id + 1
+                val newPlayer = Player(id = newPlayerID)
                 room.roomInfo.playerList += newPlayer
                 room.playerSessionToID.add(PlayerSession(this, newPlayerID))
                 sendMessage(Message(currentState = Message.CurrentState(room.roomInfo, newPlayerID)))
                 broadcastSkipSender(Message(playerJoined = Message.PlayerJoined(newPlayer)))
             }
-
+            val senderID = room.playerSessionToID.first { it.session == this }.playerID
+            val sendingPlayer = room.roomInfo.playerList.first { it.id == senderID }
             try {
                 while (true) {
                     val frame = incoming.receive()
                     if (frame is Frame.Text) {
                         room.mutex.withLock {
                             val message = json.decodeFromString(Message.serializer(), frame.readText())
-                            if(message.cardsPlayed != null) {
-                                val id = room.playerSessionToID.first { it.session == this }.playerID
-                                room.roomInfo.playerList.first { it.id == id }.presentedHand = message.cardsPlayed.cards
+
+                            if (message.setName != null) {
+                                sendingPlayer.name = message.setName.name
+                                broadcast(message)
+                            }
+                            else if (message.selectionOfRole != null) {
+                                sendingPlayer.judgeRole = message.selectionOfRole.role
                                 broadcastSkipSender(message)
+                            }
+                            else if (message.cardsPlayed != null) {
+                                sendingPlayer.presentedHand = message.cardsPlayed.cards
+                                broadcastSkipSender(message)
+                            }
+                            else if (message.endOfRoundRequest != null) {
+                                // TODO implement
                             }
                         }
                         send(Frame.Text("Client said: " + frame.readText()))
                     }
                 }
             } catch (e: Throwable) {
-
-
+                globalMutex.withLock {
+                    broadcastSkipSender(Message(playerLeft = Message.PlayerLeft(senderID)))
+                    room.playerSessionToID.remove(room.playerSessionToID.first { it.playerID == senderID })
+                    room.roomInfo.playerList.remove(sendingPlayer)
+                    if (room.roomInfo.playerList.isEmpty())
+                        rooms.remove(roomCode)
+                    // TODO: If leaving player is judge, send end of round
+                }
             }
 
             get("/json/gson") {

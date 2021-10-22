@@ -3,99 +3,16 @@
 // Please refer to and edit the original, io.github.JMoore34_CSweetman.SerializableClasses.
 
 interface CardsPlayed {
-    cardsPlayed: string[];
+    cards: string[];
     playerID: number | undefined;
-}
-
-interface CoroutineContext {
-}
-
-interface CoroutineScope {
-    coroutineContext: CoroutineContext;
-}
-
-interface AttributeKey<T> {
-    name: string;
-}
-
-interface WebSocketExtensionFactory<ConfigType, ExtensionType extends WebSocketExtension<ConfigType>> {
-    key: AttributeKey<ExtensionType>;
-    rsv1: boolean;
-    rsv2: boolean;
-    rsv3: boolean;
-}
-
-interface WebSocketExtensionHeader {
-    name: string;
-    parameters: string[];
-}
-
-interface WebSocketExtension<ConfigType> {
-    factory: WebSocketExtensionFactory<ConfigType, WebSocketExtension<ConfigType>>;
-    protocols: WebSocketExtensionHeader[];
-}
-
-interface SelectClause1<Q> {
-}
-
-interface ChannelResult<T> {
-    isClosed: boolean;
-    isFailure: boolean;
-    isSuccess: boolean;
-}
-
-interface ReceiveChannel<E> {
-    isClosedForReceive: boolean;
-    isEmpty: boolean;
-    onReceive: SelectClause1<E>;
-    onReceiveCatching: SelectClause1<ChannelResult<E>>;
-    onReceiveOrNull: SelectClause1<E | undefined>;
-}
-
-interface Buffer {
-}
-
-interface ByteBuffer extends Buffer {
-}
-
-interface DisposableHandle {
-}
-
-type FrameType = "TEXT" | "BINARY" | "CLOSE" | "PING" | "PONG";
-
-interface Frame {
-    buffer: ByteBuffer;
-    data: number[];
-    disposableHandle: DisposableHandle;
-    fin: boolean;
-    frameType: FrameType;
-    rsv1: boolean;
-    rsv2: boolean;
-    rsv3: boolean;
-}
-
-interface SelectClause2<P, Q> {
-}
-
-interface SendChannel<E> {
-    isClosedForSend: boolean;
-    onSend: SelectClause2<E, SendChannel<E>>;
-}
-
-interface WebSocketSession extends CoroutineScope {
-    extensions: WebSocketExtension<any>[];
-    incoming: ReceiveChannel<Frame>;
-    masking: boolean;
-    maxFrameSize: number;
-    outgoing: SendChannel<Frame>;
 }
 
 interface Player {
     id: number;
+    judgeRole: string | undefined;
     name: string;
     presentedHand: string[];
     rolesWon: string[];
-    session: WebSocketSession | undefined;
 }
 
 interface SerializableRoomInfo {
@@ -124,8 +41,13 @@ interface PlayerLeft {
 }
 
 interface SelectionOfRole {
-    Role: string;
     judgeID: number | undefined;
+    role: string;
+}
+
+interface SetName {
+    name: string;
+    playerID: number | undefined;
 }
 
 interface Message {
@@ -135,4 +57,5 @@ interface Message {
     playerJoined: PlayerJoined | undefined;
     playerLeft: PlayerLeft | undefined;
     selectionOfRole: SelectionOfRole | undefined;
+    setName: SetName | undefined;
 }
