@@ -9,13 +9,14 @@ class Player(
     val id: Int,
     val rolesWon: MutableList<String> = mutableListOf(),
     var presentedHand: List<String> = listOf(),
-    var judgeRole: String? = null
+    var judgeRole: String? = null,
+    @kotlinx.serialization.Transient
+    val session: WebSocketSession? = null
 )
-
 @Serializable
 class SerializableRoomInfo(
-    var playerList: MutableList<Player> = mutableListOf<Player>(),
-    val judgePlayerID: Int = 0,
+    var playerList: MutableList<Player> = mutableListOf(),
+    var judgePlayerID: Int = 0,
     val judgeRole: String = ""
 )
 

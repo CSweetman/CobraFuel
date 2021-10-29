@@ -21,18 +21,19 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 val rooms = mutableMapOf<String, Room>()
 val globalMutex = Mutex()
 
-val a = englishWords.shuffled()
 
-data class PlayerSession(val session: WebSocketSession, val playerID: Int)
 
 class Room(
     val roomInfo: SerializableRoomInfo = SerializableRoomInfo(),
-    val englishWordIterator: Iterator<String> = englishWords.shuffled().iterator(),
-    var customWords: Iterator<String> = listOf<String>().iterator(),
-    var profaneWords: Iterator<String> = listOf<String>().iterator(),
-    val judgeRolesIterator: Iterator<String> = judgeRoles.shuffled().iterator(),
+    val words: Sequence<String> = sequence {
+        while (true)
+            yieldAll(englishWords.shuffled())
+    },
+    val judgeRoleSequence: Sequence<String> = sequence {
+        while (true)
+            yieldAll(judgeRoles.shuffled())
+    },
     val mutex: Mutex = Mutex(),
-    val playerSessionToID: MutableList<PlayerSession> = mutableListOf()
 )
 
 val json = Json { explicitNulls = false; prettyPrint = false }
@@ -84,29 +85,48 @@ fun Application.module(testing: Boolean = false) {
 
             // Broadcasts a message to all users in the room
             suspend fun broadcast(msg: Message) {
-                room.playerSessionToID.map {
-                    it.session.sendMessage(msg)
+                room.roomInfo.playerList.map {
+                    it.session!!.sendMessage(msg)
                 }
             }
 
             //
 //            // Like above, but skips the client who prompted the server
             suspend fun broadcastSkipSender(msg: Message) {
-                room.playerSessionToID.filter { it.session != this }.map {
-                    it.session.sendMessage(msg)
+                room.roomInfo.playerList.filter { it.session != this }.map {
+                    it.session!!.sendMessage(msg)
+                }
+            }
+
+            suspend fun callEndOfRound(winnerPlayerID: Int?) {
+                var winner: Player? = null
+                if (winnerPlayerID != null) {
+                    winner = room.roomInfo.playerList.first { it.id == winnerPlayerID }
+                    winner.rolesWon += room.roomInfo.judgeRole
+                }
+                val currentJudgeIndex =
+                    room.roomInfo.playerList.indexOfFirst { it.id == room.roomInfo.judgePlayerID }
+                val newJudgeIndex = (currentJudgeIndex + 1) % room.roomInfo.playerList.size
+                val newJudge = room.roomInfo.playerList[newJudgeIndex]
+                room.roomInfo.judgePlayerID = newJudge.id
+                room.roomInfo.playerList.map {
+                    val newCards = room.words.take(it.presentedHand.size).toList()
+                    it.session!!.sendMessage(Message(endOfRound = Message.EndOfRound(winnerPlayerID = winner?.id,
+                        newCards = newCards,
+                        // only let them choose a role if they are the new judge
+                        roleCards = if (it == newJudge) {room.judgeRoleSequence.take(2).toList()} else {null}
+                    )))
                 }
             }
 
             room.mutex.withLock {
                 val newPlayerID = if (room.roomInfo.playerList.isEmpty()) 0 else room.roomInfo.playerList.last().id + 1
-                val newPlayer = Player(id = newPlayerID)
+                val newPlayer = Player(id = newPlayerID, session = this)
                 room.roomInfo.playerList += newPlayer
-                room.playerSessionToID.add(PlayerSession(this, newPlayerID))
                 sendMessage(Message(currentState = Message.CurrentState(room.roomInfo, newPlayerID)))
                 broadcastSkipSender(Message(playerJoined = Message.PlayerJoined(newPlayer)))
             }
-            val senderID = room.playerSessionToID.first { it.session == this }.playerID
-            val sendingPlayer = room.roomInfo.playerList.first { it.id == senderID }
+            val sendingPlayer = room.roomInfo.playerList.first { it.session == this }
             try {
                 while (true) {
                     val frame = incoming.receive()
@@ -117,30 +137,30 @@ fun Application.module(testing: Boolean = false) {
                             if (message.setName != null) {
                                 sendingPlayer.name = message.setName.name
                                 broadcast(message)
-                            }
-                            else if (message.selectionOfRole != null) {
+                            } else if (message.selectionOfRole != null) {
                                 sendingPlayer.judgeRole = message.selectionOfRole.role
                                 broadcastSkipSender(message)
-                            }
-                            else if (message.cardsPlayed != null) {
+                            } else if (message.cardsPlayed != null) {
                                 sendingPlayer.presentedHand = message.cardsPlayed.cards
                                 broadcastSkipSender(message)
-                            }
-                            else if (message.endOfRoundRequest != null) {
-                                // TODO implement
+                            } else if (message.endOfRoundRequest != null) {
+                                callEndOfRound(message.endOfRoundRequest.winnerPlayerID)
                             }
                         }
                         send(Frame.Text("Client said: " + frame.readText()))
                     }
                 }
             } catch (e: Throwable) {
+                println(e)
                 globalMutex.withLock {
-                    broadcastSkipSender(Message(playerLeft = Message.PlayerLeft(senderID)))
-                    room.playerSessionToID.remove(room.playerSessionToID.first { it.playerID == senderID })
+                    broadcastSkipSender(Message(playerLeft = Message.PlayerLeft(sendingPlayer.id)))
+                    val isLeavingPlayerTheJudge = sendingPlayer.id == room.roomInfo.judgePlayerID
                     room.roomInfo.playerList.remove(sendingPlayer)
+                    if (isLeavingPlayerTheJudge) {
+                        callEndOfRound(null) // no winner
+                    }
                     if (room.roomInfo.playerList.isEmpty())
                         rooms.remove(roomCode)
-                    // TODO: If leaving player is judge, send end of round
                 }
             }
 

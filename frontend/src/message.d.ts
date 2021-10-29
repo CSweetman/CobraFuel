@@ -32,6 +32,10 @@ interface EndOfRound {
     winnerPlayerID: number | undefined;
 }
 
+interface EndOfRoundRequest {
+    winnerPlayerID: number | undefined;
+}
+
 interface PlayerJoined {
     newPlayer: Player;
 }
@@ -54,6 +58,7 @@ interface Message {
     cardsPlayed: CardsPlayed | undefined;
     currentState: CurrentState | undefined;
     endOfRound: EndOfRound | undefined;
+    endOfRoundRequest: EndOfRoundRequest | undefined;
     playerJoined: PlayerJoined | undefined;
     playerLeft: PlayerLeft | undefined;
     selectionOfRole: SelectionOfRole | undefined;
