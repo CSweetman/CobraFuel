@@ -1,11 +1,8 @@
 import React from 'react';
-import {
-  Switch,
-  Route,
-  HashRouter
-} from "react-router-dom";
-import { Home } from './compoents/Home';
-import { Room } from './compoents/Room';
+import { HashRouter, Route, Switch } from 'react-router-dom';
+
+import { Home } from './components/Home';
+import { Room } from './components/Room';
 
 
 function App() {

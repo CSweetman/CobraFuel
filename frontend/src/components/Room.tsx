@@ -1,6 +1,4 @@
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import LinearProgress from '@mui/material/LinearProgress';
+import { Dialog, DialogTitle, LinearProgress } from "@mui/material";
 import React, {useEffect, useRef, useState} from "react";
 import {useParams} from "react-router";
 import useWebSocket, {ReadyState} from "react-use-websocket";
@@ -15,7 +13,7 @@ export const Room: React.FunctionComponent<{}> = (props) => {
         lastMessage,
         lastJsonMessage,
         readyState,
-    } = useWebSocket(`wss://localhost:8080/${roomCode.toLowerCase()}`, {
+    } = useWebSocket(`ws://127.0.0.1/${roomCode}`, { // TODO: Change in production
         retryOnError: true,
         reconnectInterval: 4000,
         reconnectAttempts: 9

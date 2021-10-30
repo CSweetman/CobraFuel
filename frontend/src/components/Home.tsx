@@ -1,8 +1,7 @@
 import React, { FunctionComponent, useState } from "react";
 import styled from "styled-components";
 import { useHistory } from "react-router-dom";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
+import { Button, TextField } from "@mui/material";
 
 const InputContainter = styled.div`
   width: 100%;
