@@ -12,6 +12,7 @@ buildscript {
 }
 
 plugins {
+    // https://github.com/ayedo/ktsgenerator
     id 'ch.ayedo.ktsgenerator' version '2.1.0'
 }
 
@@ -49,7 +50,7 @@ dependencies {
 
 
 typescriptGenerator {
-
+    // https://github.com/ayedo/ktsgenerator
     // The path to the resulting generated type defintions file
     outputPath = project.projectDir.toPath().resolve("frontend/src/message.d.ts")
 
@@ -65,5 +66,4 @@ typescriptGenerator {
             "// Please refer to and edit the original, io.github.JMoore34_CSweetman.SerializableClasses."]
 
     typeMappings = ['io.ktor.http.cio.websocket.WebSocketSession':'void']
-
 }

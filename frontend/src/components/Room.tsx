@@ -25,25 +25,119 @@ export const Room: React.FunctionComponent<{}> = (props) => {
         [ReadyState.CLOSED]: 'Connection closed.',
         [ReadyState.UNINSTANTIATED]: 'Connection uninstantiated',
     }[readyState];
-   
+
+    var myPlayerID: number;
+    const [players, setPlayers] = useState<Array<Player>>([])
+    const [judgePlayerID, setJudgePlayerID] = useState<number>(-1)
+    const [judgeRole, setJudgeRole] = useState<string>("")
+    const [playerHand, setPlayerHand] = useState<Array<string>>([])
+
+    // When we become judge, these are the roles we can pick from.
+    // The role picker dialog is open when this is not null.
+    const [roleCards, setRoleCards] = useState<Array<string> | null>(null)
+
     useEffect(() => {
         if (lastJsonMessage) {
             const message = lastJsonMessage as Message
+            
+            if (message.initializeClient) { // Initial state (first messsage) from server, only received once
+                myPlayerID = message.initializeClient.playerID
+                const roomData = message.initializeClient.roomData
+                setPlayers(roomData.playerList)
+                setJudgePlayerID(roomData.judgePlayerID)
+                setJudgeRole(roomData.judgeRole)
+                setPlayerHand(message.initializeClient.startingHand)
+            } else if (message.playerJoined) { // when another player joins after this client
+                setPlayers([...players, message.playerJoined.newPlayer])
+            } else if (message.playerLeft){
+                setPlayers(players.filter(player=> player.id != message.playerLeft?.playerID))
+            } else if (message.setName){
+                const newPlayers : Array<Player> = {...players}
+                const player = newPlayers.find(player => player.id === message.setName?.playerID)
+                player!!.name = message.setName.name
+                setPlayers(newPlayers) // tell React players has change
+            } else if (message.selectionOfRole){
+                setJudgeRole(message.selectionOfRole.role)
+            } else if (message.endOfRound) {
+                setPlayerHand([...playerHand, ...message.endOfRound.newCards])
+                setJudgePlayerID(message.endOfRound.newJudgeID)
+               
 
-        
+                if (message.endOfRound.winnerPlayerID) {
+                    const newPlayers = [...players]
+                    const winningPlayer = newPlayers.find(player => player.id === message.endOfRound!!.winnerPlayerID)!!
+                    winningPlayer.rolesWon = [...winningPlayer.rolesWon, judgeRole] // they convinced this judge so they win the title
+                    setPlayers(newPlayers)
+                    // TODO: Show toast/notification of player winning round
+                }
 
+                setJudgeRole("") // judge needs to pick which role they want
+
+                if (message.endOfRound.roleCards) {
+                    // we are the new judge and need to pick which role we want
+                    setRoleCards(message.endOfRound.roleCards)
+                }
+            }
         }
     }, [lastJsonMessage])
 
 
-    return <>
+    return (
+      <>
+        <Container></Container>
 
-        <Dialog disableEscapeKeyDown
-                open={readyState !== ReadyState.OPEN}>
-
-            <DialogTitle>{connectionStatus}</DialogTitle>
-            {(readyState === ReadyState.CONNECTING || readyState === ReadyState.CLOSING) && <LinearProgress />}
+        <Dialog disableEscapeKeyDown open={roleCards != null}>
+          {roleCards?.map((role) => (
+            <Role
+              onClick={() => {
+                const message: Message = {
+                  ...blankMessage,
+                  selectionOfRole: {
+                    role: role,
+                  },
+                };
+                sendJsonMessage(message);
+                setRoleCards(null); // close dialog
+              }}
+            >
+              {role}
+            </Role>
+          ))}
+          <DialogTitle>Pick a role!</DialogTitle>
         </Dialog>
 
-    </>
+        <Dialog disableEscapeKeyDown open={readyState !== ReadyState.OPEN}>
+          <DialogTitle>{connectionStatus}</DialogTitle>
+          {(readyState === ReadyState.CONNECTING ||
+            readyState === ReadyState.CLOSING) && <LinearProgress />}
+        </Dialog>
+      </>
+    );
+}
+
+const Container = styled.div`
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+`;
+
+
+const Role = styled.div`
+    border-radius:50;
+    border: 1px solid red;
+    padding: 0.5em;
+    margin: 1em;
+    background-color: pink;
+`;
+
+const blankMessage: Message = {
+    cardsPlayed: undefined,
+    endOfRound: undefined,
+    endOfRoundRequest: undefined,
+    initializeClient: undefined,
+    playerJoined: undefined,
+    playerLeft: undefined,
+    selectionOfRole: undefined,
+    setName: undefined
 }

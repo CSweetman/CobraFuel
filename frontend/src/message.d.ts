@@ -7,12 +7,23 @@ interface CardsPlayed {
     playerID: number | undefined;
 }
 
+interface EndOfRound {
+    newCards: string[];
+    newJudgeID: number;
+    roleCards: string[] | undefined;
+    winnerPlayerID: number | undefined;
+}
+
+interface EndOfRoundRequest {
+    winnerPlayerID: number | undefined;
+}
+
 interface Player {
     id: number;
-    judgeRole: string | undefined;
     name: string;
     presentedHand: string[];
     rolesWon: string[];
+    session: void | undefined;
 }
 
 interface SerializableRoomInfo {
@@ -21,19 +32,10 @@ interface SerializableRoomInfo {
     playerList: Player[];
 }
 
-interface CurrentState {
+interface InitializeClient {
     playerID: number;
     roomData: SerializableRoomInfo;
-}
-
-interface EndOfRound {
-    newCards: string[];
-    roleCards: string[] | undefined;
-    winnerPlayerID: number | undefined;
-}
-
-interface EndOfRoundRequest {
-    winnerPlayerID: number | undefined;
+    startingHand: string[];
 }
 
 interface PlayerJoined {
@@ -45,7 +47,6 @@ interface PlayerLeft {
 }
 
 interface SelectionOfRole {
-    judgeID: number | undefined;
     role: string;
 }
 
@@ -56,9 +57,9 @@ interface SetName {
 
 interface Message {
     cardsPlayed: CardsPlayed | undefined;
-    currentState: CurrentState | undefined;
     endOfRound: EndOfRound | undefined;
     endOfRoundRequest: EndOfRoundRequest | undefined;
+    initializeClient: InitializeClient | undefined;
     playerJoined: PlayerJoined | undefined;
     playerLeft: PlayerLeft | undefined;
     selectionOfRole: SelectionOfRole | undefined;

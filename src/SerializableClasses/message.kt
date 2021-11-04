@@ -1,7 +1,6 @@
 package io.github.JMoore34_CSweetman.SerializableClasses
 import io.ktor.http.cio.websocket.*
 import kotlinx.serialization.*
-import kotlin.jvm.Transient
 
 @Serializable
 class Player(
@@ -9,7 +8,6 @@ class Player(
     val id: Int,
     val rolesWon: MutableList<String> = mutableListOf(),
     var presentedHand: List<String> = listOf(),
-    var judgeRole: String? = null,
     @kotlinx.serialization.Transient
     val session: WebSocketSession? = null
 )
@@ -23,7 +21,7 @@ class SerializableRoomInfo(
 @Serializable
 class Message(
     // Exactly one of the following will be non-null.
-    val currentState: CurrentState? = null,
+    val initializeClient: InitializeClient? = null,
     val playerJoined: PlayerJoined? = null,
     val playerLeft: PlayerLeft? = null,
     val endOfRoundRequest: EndOfRoundRequest? = null,
@@ -35,7 +33,7 @@ class Message(
     // Informs a new player of the current room state & their assigned player ID.
     // Server -> Client only.
     @Serializable
-    class CurrentState(val roomData: SerializableRoomInfo, val playerID: Int)
+    class InitializeClient(val roomData: SerializableRoomInfo, val playerID: Int, val startingHand: List<String>)
 
     // Informs players of a new player who joined.
     // Server -> Client only.
@@ -56,13 +54,13 @@ class Message(
     // from iff the player is now the judge (this list is null otherwise).
     // Server -> Client only.
     @Serializable
-    class EndOfRound(val winnerPlayerID: Int?, val newCards: List<String>, val roleCards: List<String>?)
+    class EndOfRound(val winnerPlayerID: Int?, val newCards: List<String>, val roleCards: List<String>?, val newJudgeID: Int)
 
     // 1. Sent from judge player to server when they choose between their role options.
     // 2. Broadcast from server to all clients (server sets judge ID).
     // Judge player -> Server -> All clients
     @Serializable
-    class SelectionOfRole(val role: String, val judgeID: Int?)
+    class SelectionOfRole(val role: String)
 
     // 1. Sent from player to server when they select the cards they want to present.
     // 2. Broadcast from server to all clients (server sets player ID).

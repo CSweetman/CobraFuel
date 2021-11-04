@@ -114,7 +114,8 @@ fun Application.module(testing: Boolean = false) {
                     it.session!!.sendMessage(Message(endOfRound = Message.EndOfRound(winnerPlayerID = winner?.id,
                         newCards = newCards,
                         // only let them choose a role if they are the new judge
-                        roleCards = if (it == newJudge) {room.judgeRoleSequence.take(2).toList()} else {null}
+                        roleCards = if (it == newJudge) {room.judgeRoleSequence.take(2).toList()} else {null},
+                        newJudgeID = newJudge.id
                     )))
                 }
             }
@@ -123,7 +124,7 @@ fun Application.module(testing: Boolean = false) {
                 val newPlayerID = if (room.roomInfo.playerList.isEmpty()) 0 else room.roomInfo.playerList.last().id + 1
                 val newPlayer = Player(id = newPlayerID, session = this)
                 room.roomInfo.playerList += newPlayer
-                sendMessage(Message(currentState = Message.CurrentState(room.roomInfo, newPlayerID)))
+                sendMessage(Message(initializeClient = Message.InitializeClient(room.roomInfo, newPlayerID, room.words.take(6).toList())))
                 broadcastSkipSender(Message(playerJoined = Message.PlayerJoined(newPlayer)))
             }
             val sendingPlayer = room.roomInfo.playerList.first { it.session == this }
@@ -138,7 +139,6 @@ fun Application.module(testing: Boolean = false) {
                                 sendingPlayer.name = message.setName.name
                                 broadcast(message)
                             } else if (message.selectionOfRole != null) {
-                                sendingPlayer.judgeRole = message.selectionOfRole.role
                                 broadcastSkipSender(message)
                             } else if (message.cardsPlayed != null) {
                                 sendingPlayer.presentedHand = message.cardsPlayed.cards
