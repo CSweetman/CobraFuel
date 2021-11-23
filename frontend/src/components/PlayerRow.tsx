@@ -1,4 +1,5 @@
-import React from "react";
+import { Button } from "@mui/material";
+import React, { MouseEventHandler } from "react";
 import styled from "styled-components";
 
 const RowContainer = styled.div`
@@ -8,7 +9,7 @@ const RowContainer = styled.div`
   display: flex;
 `;
 
-const IsJudge = styled.div`
+const JudgeIndicator = styled.div`
   height: 25px;
   width: 25px;
   background-color: red;
@@ -20,10 +21,14 @@ const PlayerRow = ({
   playerInfo,
   isJudge,
   judgeRole,
+  showJudgeControls,
+  onPlayerWin
 }: {
   playerInfo: Player;
   isJudge: boolean;
   judgeRole: string | null;
+  showJudgeControls: boolean;
+  onPlayerWin: MouseEventHandler<HTMLButtonElement> | undefined;
 }) => {
   return (
       <RowContainer>
@@ -31,13 +36,15 @@ const PlayerRow = ({
         {isJudge && (
           <>
             <h3>Role: {judgeRole}</h3>
-            <IsJudge></IsJudge>
+            <JudgeIndicator />
           </>
         )}
         <h4>Roles won: </h4>
         {playerInfo?.rolesWon?.map((role) => {
           return <p>{role}</p>;
         })}
+
+      {!isJudge && showJudgeControls && <Button variant="contained" color="success" onClick={onPlayerWin}>Select</Button>}
       </RowContainer>
   );
 };

@@ -14,8 +14,8 @@ class Player(
 @Serializable
 class SerializableRoomInfo(
     var playerList: MutableList<Player> = mutableListOf(),
-    var judgePlayerID: Int = 0,
-    val judgeRole: String = ""
+    var judgePlayerID: Int,
+    var judgeRole: String = ""
 )
 
 @Serializable

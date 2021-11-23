@@ -30,9 +30,9 @@ export const Room: React.FunctionComponent<{}> = (props) => {
         [ReadyState.UNINSTANTIATED]: 'Connection uninstantiated',
     }[readyState];
 
-    var myPlayerID: number;
+    const [myPlayerID, setMyPlayerID] = useState<number>(-1)
     const [players, setPlayers] = useState<Array<Player>>([])
-    const [judgePlayerID, setJudgePlayerID] = useState<number>(-1)
+    const [judgePlayerID, setJudgePlayerID] = useState<number>(-1) 
     const [judgeRole, setJudgeRole] = useState<string>("")
     const [playerHand, setPlayerHand] = useState<Array<string>>([])
 
@@ -45,7 +45,7 @@ export const Room: React.FunctionComponent<{}> = (props) => {
             const message = lastJsonMessage as Message
             
             if (message.initializeClient) { // Initial state (first messsage) from server, only received once
-                myPlayerID = message.initializeClient.playerID
+                setMyPlayerID(message.initializeClient.playerID)
                 const roomData = message.initializeClient.roomData
                 setPlayers(roomData.playerList)
                 setJudgePlayerID(roomData.judgePlayerID)
@@ -70,6 +70,8 @@ export const Room: React.FunctionComponent<{}> = (props) => {
                 if (message.endOfRound.winnerPlayerID) {
                     const newPlayers = [...players]
                     const winningPlayer = newPlayers.find(player => player.id === message.endOfRound!!.winnerPlayerID)!!
+                    if (!winningPlayer.rolesWon) 
+                      winningPlayer.rolesWon = []
                     winningPlayer.rolesWon = [...winningPlayer.rolesWon, judgeRole] // they convinced this judge so they win the title
                     setPlayers(newPlayers)
                     // TODO: Show toast/notification of player winning round
@@ -86,13 +88,24 @@ export const Room: React.FunctionComponent<{}> = (props) => {
     }, [lastJsonMessage])
 
 
+
     return (
       <>
         <Container>
           {players.map(player => <PlayerRow 
             playerInfo={player}
-            isJudge={false}
-            judgeRole={null}
+            isJudge={player.id === judgePlayerID}
+            judgeRole={judgeRole}
+            showJudgeControls={myPlayerID === judgePlayerID}
+            onPlayerWin = {() => {
+              const message: Message = {
+                ...blankMessage,
+                endOfRoundRequest: {
+                  winnerPlayerID: player.id
+                },
+              };
+              sendJsonMessage(message)
+            }}
           />)}
         </Container>
 
@@ -108,6 +121,10 @@ export const Room: React.FunctionComponent<{}> = (props) => {
                 };
                 sendJsonMessage(message);
                 setRoleCards(null); // close dialog
+                
+                // To reduce network traffic, the server skips the sender when broadcasting the selection
+                // of the judge role, so we update the local judge role ourselves below.
+                setJudgeRole(role);
               }}
             >
               {role}

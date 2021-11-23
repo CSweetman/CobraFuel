@@ -1,6 +1,5 @@
 import React from 'react';
 import { HashRouter, Route, Routes} from 'react-router-dom';
-
 import { Home } from './components/Home';
 import { Room } from './components/Room';
 
