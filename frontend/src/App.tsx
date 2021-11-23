@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter, Route, Switch } from 'react-router-dom';
+import { HashRouter, Route, Routes} from 'react-router-dom';
 
 import { Home } from './components/Home';
 import { Room } from './components/Room';
@@ -8,14 +8,10 @@ import { Room } from './components/Room';
 function App() {
   return (
     <HashRouter>
-      <Switch>
-        <Route path="/:roomCode">
-          <Room />
-        </Route>
-        <Route path="/">
-          <Home />
-        </Route>
-      </Switch>
+      <Routes>
+        <Route path="/:roomCode" element={<Room />} />
+        <Route path="/" element={<Home />} />
+      </Routes>
     </HashRouter>
   );
 }

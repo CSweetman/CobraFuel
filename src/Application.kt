@@ -156,7 +156,7 @@ fun Application.module(testing: Boolean = false) {
                     broadcastSkipSender(Message(playerLeft = Message.PlayerLeft(sendingPlayer.id)))
                     val isLeavingPlayerTheJudge = sendingPlayer.id == room.roomInfo.judgePlayerID
                     room.roomInfo.playerList.remove(sendingPlayer)
-                    if (isLeavingPlayerTheJudge) {
+                    if (!room.roomInfo.playerList.isEmpty() &&isLeavingPlayerTheJudge) {
                         callEndOfRound(null) // no winner
                     }
                     if (room.roomInfo.playerList.isEmpty())

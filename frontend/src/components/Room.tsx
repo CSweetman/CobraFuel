@@ -3,10 +3,14 @@ import React, {useEffect, useRef, useState} from "react";
 import {useParams} from "react-router";
 import useWebSocket, {ReadyState} from "react-use-websocket";
 import styled from "styled-components";
+import PlayerRow from "./PlayerRow";
 
-
+type codeType = {
+  roomCode: string;
+};
 export const Room: React.FunctionComponent<{}> = (props) => {
-    const {roomCode} = useParams<{ roomCode: string }>()
+    // @ts-ignore  -- tell typescript to stfu
+    const {roomCode} = useParams()
     const {
         sendMessage,
         sendJsonMessage,
@@ -84,7 +88,13 @@ export const Room: React.FunctionComponent<{}> = (props) => {
 
     return (
       <>
-        <Container></Container>
+        <Container>
+          {players.map(player => <PlayerRow 
+            playerInfo={player}
+            isJudge={false}
+            judgeRole={null}
+          />)}
+        </Container>
 
         <Dialog disableEscapeKeyDown open={roleCards != null}>
           {roleCards?.map((role) => (

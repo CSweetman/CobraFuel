@@ -1,6 +1,6 @@
 import React, { FunctionComponent, useState } from "react";
 import styled from "styled-components";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button, TextField } from "@mui/material";
 
 const InputContainter = styled.div`
@@ -34,11 +34,12 @@ const PageContainer = styled.div`
 
 export const Home: React.FunctionComponent<{}> = (props) => {
   const [roomName, setRoomName] = useState("");
+  const navigate = useNavigate();
 
-  const history = useHistory();
+  const history = useNavigate();
   const goToRoom = () => {
     if (roomName.length > 0) {
-      history.push(`${roomName}`);
+      navigate(`${roomName}`, {replace: true});
     }
   };
 
