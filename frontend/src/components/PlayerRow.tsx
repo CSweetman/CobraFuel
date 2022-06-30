@@ -1,13 +1,13 @@
-import { Button } from "@mui/material";
-import React, { MouseEventHandler } from "react";
-import styled from "styled-components";
+import { Button, Tooltip } from "@mui/material"
+import React, { MouseEventHandler } from "react"
+import styled from "styled-components"
 
 const RowContainer = styled.div`
   width: 100vw;
   border: 2px red;
   border-radius: 10%;
   display: flex;
-`;
+`
 
 const JudgeIndicator = styled.div`
   height: 25px;
@@ -15,38 +15,51 @@ const JudgeIndicator = styled.div`
   background-color: red;
   border-radius: 50%;
   display: inline-block;
-`;
+`
+
+const RolesWonContainer = styled.div`
+  background-color: #f51515;
+  color: #82df82;
+  display: block;
+  height: auto;
+`
 
 const PlayerRow = ({
   playerInfo,
   isJudge,
   judgeRole,
   showJudgeControls,
-  onPlayerWin
+  onPlayerWin,
 }: {
-  playerInfo: Player;
-  isJudge: boolean;
-  judgeRole: string | null;
-  showJudgeControls: boolean;
-  onPlayerWin: MouseEventHandler<HTMLButtonElement> | undefined;
+  playerInfo: Player
+  isJudge: boolean
+  judgeRole: string | null
+  showJudgeControls: boolean
+  onPlayerWin: MouseEventHandler<HTMLButtonElement> | undefined
 }) => {
   return (
-      <RowContainer>
-        <h1>{playerInfo.name ?? "Player"}</h1>
-        {isJudge && (
-          <>
-            <h3>Role: {judgeRole}</h3>
-            <JudgeIndicator />
-          </>
-        )}
-        <h4>Roles won: </h4>
-        {playerInfo?.rolesWon?.map((role) => {
+    <RowContainer>
+      <span>{playerInfo.name ?? "Player"}</span>
+      {isJudge && (
+        <>
+          <span>Role: {judgeRole}</span>
+          <JudgeIndicator />
+        </>
+      )}
+      <Tooltip title={playerInfo?.rolesWon?.join(", ")}>
+        <RolesWonContainer>Roles won: {playerInfo.rolesWon?.length}</RolesWonContainer>
+        {/* {playerInfo?.rolesWon?.map((role) => {
           return <p>{role}</p>;
-        })}
+        })} */}
+      </Tooltip>
 
-      {!isJudge && showJudgeControls && <Button variant="contained" color="success" onClick={onPlayerWin}>Select</Button>}
-      </RowContainer>
-  );
-};
+      {!isJudge && showJudgeControls && (
+        <Button variant="contained" color="success" onClick={onPlayerWin}>
+          Select
+        </Button>
+      )}
+    </RowContainer>
+  )
+}
 
-export default PlayerRow;
+export default PlayerRow
